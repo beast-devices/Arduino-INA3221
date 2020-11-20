@@ -28,186 +28,206 @@
 
 #include "Beastdevices_INA3221.h"
 
-void Beastdevices_INA3221::read(INA3221_REG reg, uint16_t *val) {
-    i2c->beginTransmission(i2c_addr);
-    i2c->write(reg); // Register
-    i2c->endTransmission();
+void Beastdevices_INA3221::_read(ina3221_reg_t reg, uint16_t *val) {
+    _i2c->beginTransmission(_i2c_addr);
+    _i2c->write(reg); // Register
+    _i2c->endTransmission();
 
-    i2c->requestFrom(i2c_addr, (uint8_t)2);
+    _i2c->requestFrom(_i2c_addr, (uint8_t)2);
 
-    if (i2c->available())
+    if (_i2c->available())
     {
-      *val = ((i2c->read() << 8) | i2c->read());
+      *val = ((_i2c->read() << 8) | _i2c->read());
     }
 }
 
-void Beastdevices_INA3221::write(INA3221_REG reg, uint16_t *val) {
-    i2c->beginTransmission(i2c_addr);
-    i2c->write(reg);                 // Register
-    i2c->write((*val >> 8) & 0xFF); // Upper 8-bits
-    i2c->write(*val & 0xFF);        // Lower 8-bits
-    i2c->endTransmission();
+void Beastdevices_INA3221::_write(ina3221_reg_t reg, uint16_t *val) {
+    _i2c->beginTransmission(_i2c_addr);
+    _i2c->write(reg);                 // Register
+    _i2c->write((*val >> 8) & 0xFF); // Upper 8-bits
+    _i2c->write(*val & 0xFF);        // Lower 8-bits
+    _i2c->endTransmission();
 }
 
 void Beastdevices_INA3221::begin(TwoWire *theWire) {
-    i2c = theWire;
-    i2c->begin();
+    _i2c = theWire;
+
+    _shuntRes[0] = 10;
+    _shuntRes[1] = 10;
+    _shuntRes[2] = 10;
+
+    _filterRes[0] = 0;
+    _filterRes[1] = 0;
+    _filterRes[2] = 0;
+
+    _i2c->begin();
 }
 
-uint16_t Beastdevices_INA3221::getReg(INA3221_REG reg){
-    uint16_t val;
-    read(reg, &val);
+void Beastdevices_INA3221::setShuntRes(uint32_t res_ch1, uint32_t res_ch2, uint32_t res_ch3) {
+    _shuntRes[0] = res_ch1;
+    _shuntRes[1] = res_ch2;
+    _shuntRes[2] = res_ch3;
+}
+
+void Beastdevices_INA3221::setFilterRes(uint32_t res_ch1, uint32_t res_ch2, uint32_t res_ch3) {
+    _filterRes[0] = res_ch1;
+    _filterRes[1] = res_ch2;
+    _filterRes[2] = res_ch3;
+}
+
+uint16_t Beastdevices_INA3221::getReg(ina3221_reg_t reg){
+    uint16_t val = 0;
+    _read(reg, &val);
     return val;
 }
 
 void Beastdevices_INA3221::reset(){
     conf_reg_t conf_reg;
 
-    read(INA3221_REG_CONF, (uint16_t*)&conf_reg);
-    conf_reg.reset = 0x01;
-    write(INA3221_REG_CONF, (uint16_t*)&conf_reg);
+    _read(INA3221_REG_CONF, (uint16_t*)&conf_reg);
+    conf_reg.reset = 1;
+    _write(INA3221_REG_CONF, (uint16_t*)&conf_reg);
 }
 
 void Beastdevices_INA3221::setModePowerDown(){
     conf_reg_t conf_reg;
 
-    read(INA3221_REG_CONF, (uint16_t*)&conf_reg);
-    conf_reg.mode_bus_en = 0x00;
-    conf_reg.mode_continious_en = 0x00;
-
-    write(INA3221_REG_CONF, (uint16_t*)&conf_reg);
+    _read(INA3221_REG_CONF, (uint16_t*)&conf_reg);
+    conf_reg.mode_bus_en = 0;
+    conf_reg.mode_continious_en =0 ;
+    _write(INA3221_REG_CONF, (uint16_t*)&conf_reg);
 }
 
 void Beastdevices_INA3221::setModeContinious(){
     conf_reg_t conf_reg;
 
-    read(INA3221_REG_CONF, (uint16_t*)&conf_reg);
-    conf_reg.mode_continious_en = 0x01;
-    write(INA3221_REG_CONF, (uint16_t*)&conf_reg);
+    _read(INA3221_REG_CONF, (uint16_t*)&conf_reg);
+    conf_reg.mode_continious_en =1;
+    _write(INA3221_REG_CONF, (uint16_t*)&conf_reg);
 }
 
 void Beastdevices_INA3221::setModeTriggered(){
     conf_reg_t conf_reg;
 
-    read(INA3221_REG_CONF, (uint16_t*)&conf_reg);
-    conf_reg.mode_continious_en = 0x00;
-    write(INA3221_REG_CONF, (uint16_t*)&conf_reg);
+    _read(INA3221_REG_CONF, (uint16_t*)&conf_reg);
+    conf_reg.mode_continious_en = 0;
+    _write(INA3221_REG_CONF, (uint16_t*)&conf_reg);
 }
 
-void Beastdevices_INA3221::setShuntMeasEn(){
+void Beastdevices_INA3221::setShuntMeasEnable(){
     conf_reg_t conf_reg;
 
-    read(INA3221_REG_CONF, (uint16_t*)&conf_reg);
-    conf_reg.mode_shunt_en = 0x01;
-    write(INA3221_REG_CONF, (uint16_t*)&conf_reg);
+    _read(INA3221_REG_CONF, (uint16_t*)&conf_reg);
+    conf_reg.mode_shunt_en = 1;
+    _write(INA3221_REG_CONF, (uint16_t*)&conf_reg);
 }
 
-void Beastdevices_INA3221::setShuntMeasDis(){
+void Beastdevices_INA3221::setShuntMeasDisable(){
     conf_reg_t conf_reg;
 
-    read(INA3221_REG_CONF, (uint16_t*)&conf_reg);
-    conf_reg.mode_shunt_en = 0x00;
-    write(INA3221_REG_CONF, (uint16_t*)&conf_reg);
+    _read(INA3221_REG_CONF, (uint16_t*)&conf_reg);
+    conf_reg.mode_shunt_en = 0;
+    _write(INA3221_REG_CONF, (uint16_t*)&conf_reg);
 }
 
-void Beastdevices_INA3221::setBusMeasEn(){
+void Beastdevices_INA3221::setBusMeasEnable(){
     conf_reg_t conf_reg;
 
-    read(INA3221_REG_CONF, (uint16_t*)&conf_reg);
-    conf_reg.mode_bus_en = 0x01;
-    write(INA3221_REG_CONF, (uint16_t*)&conf_reg);
+    _read(INA3221_REG_CONF, (uint16_t*)&conf_reg);
+    conf_reg.mode_bus_en = 1;
+    _write(INA3221_REG_CONF, (uint16_t*)&conf_reg);
 }
 
-void Beastdevices_INA3221::setBusMeasDis(){
+void Beastdevices_INA3221::setBusMeasDisable(){
     conf_reg_t conf_reg;
 
-    read(INA3221_REG_CONF, (uint16_t*)&conf_reg);
-    conf_reg.mode_bus_en = 0x00;
-    write(INA3221_REG_CONF, (uint16_t*)&conf_reg);
+    _read(INA3221_REG_CONF, (uint16_t*)&conf_reg);
+    conf_reg.mode_bus_en = 0;
+    _write(INA3221_REG_CONF, (uint16_t*)&conf_reg);
 }
 
-void Beastdevices_INA3221::setAvgMode(INA3221_AVG_MODE mode) {
+void Beastdevices_INA3221::setAveragingMode(ina3221_avg_mode_t mode) {
     conf_reg_t conf_reg;
 
-    read(INA3221_REG_CONF, (uint16_t*)&conf_reg);
+    _read(INA3221_REG_CONF, (uint16_t*)&conf_reg);
     conf_reg.avg_mode = mode;
-    write(INA3221_REG_CONF, (uint16_t*)&conf_reg);
+    _write(INA3221_REG_CONF, (uint16_t*)&conf_reg);
 }
 
-void Beastdevices_INA3221::setBusConvTime(INA3221_CONV_TIME convTime) {
+void Beastdevices_INA3221::setBusConversionTime(ina3221_conv_time_t convTime) {
     conf_reg_t conf_reg;
 
-    read(INA3221_REG_CONF, (uint16_t*)&conf_reg);
+    _read(INA3221_REG_CONF, (uint16_t*)&conf_reg);
     conf_reg.bus_conv_time = convTime;
-    write(INA3221_REG_CONF, (uint16_t*)&conf_reg);
+    _write(INA3221_REG_CONF, (uint16_t*)&conf_reg);
 }
 
-void Beastdevices_INA3221::setShuntConvTime(INA3221_CONV_TIME convTime) {
+void Beastdevices_INA3221::setShuntConversionTime(ina3221_conv_time_t convTime) {
     conf_reg_t conf_reg;
 
-    read(INA3221_REG_CONF, (uint16_t*)&conf_reg);
+    _read(INA3221_REG_CONF, (uint16_t*)&conf_reg);
     conf_reg.shunt_conv_time = convTime;
-    write(INA3221_REG_CONF, (uint16_t*)&conf_reg);
+    _write(INA3221_REG_CONF, (uint16_t*)&conf_reg);
 }
 
-void Beastdevices_INA3221::setPwrValidUpLim(int16_t voltagemV) {
-    write(INA3221_REG_PWR_VALID_HI_LIM, (uint16_t*)&voltagemV);
+void Beastdevices_INA3221::setPwrValidUpLimit(int16_t voltagemV) {
+    _write(INA3221_REG_PWR_VALID_HI_LIM, (uint16_t*)&voltagemV);
 }
 
-void Beastdevices_INA3221::setPwrValidLowLim(int16_t voltagemV) {
-    write(INA3221_REG_PWR_VALID_LO_LIM, (uint16_t*)&voltagemV);
+void Beastdevices_INA3221::setPwrValidLowLimit(int16_t voltagemV) {
+    _write(INA3221_REG_PWR_VALID_LO_LIM, (uint16_t*)&voltagemV);
 }
 
-void Beastdevices_INA3221::setShuntSumAlertLim(int32_t voltageuV) {
-    int16_t val;
+void Beastdevices_INA3221::setShuntSumAlertLimit(int32_t voltageuV) {
+    int16_t val = 0;
     val = voltageuV / 20;
-    write(INA3221_REG_SHUNTV_SUM_LIM, (uint16_t*)&val);
+    _write(INA3221_REG_SHUNTV_SUM_LIM, (uint16_t*)&val);
 }
 
-void Beastdevices_INA3221::setCurrentSumAlertLim(int32_t currentmA) {
-    int16_t shuntuV;
-    shuntuV = currentmA*(int32_t)ch1.getShuntRes();
-    setShuntSumAlertLim(shuntuV);
+void Beastdevices_INA3221::setCurrentSumAlertLimit(int32_t currentmA) {
+    int16_t shuntuV = 0;
+    shuntuV = currentmA*(int32_t)_shuntRes[INA3221_CH1];
+    setShuntSumAlertLimit(shuntuV);
 }
 
-void Beastdevices_INA3221::setWarnAlertLatchEn() {
+void Beastdevices_INA3221::setWarnAlertLatchEnable() {
     masken_reg_t masken_reg;
 
-    read(INA3221_REG_MASK_ENABLE, (uint16_t*)&masken_reg);
-    masken_reg.warn_alert_latch_en = 0x01;
-    write(INA3221_REG_MASK_ENABLE, (uint16_t*)&masken_reg);
+    _read(INA3221_REG_MASK_ENABLE, (uint16_t*)&masken_reg);
+    masken_reg.warn_alert_latch_en = 1;
+    _write(INA3221_REG_MASK_ENABLE, (uint16_t*)&masken_reg);
     _masken_reg = masken_reg;
 }
 
-void Beastdevices_INA3221::setWarnAlertLatchDis() {
+void Beastdevices_INA3221::setWarnAlertLatchDisable() {
     masken_reg_t masken_reg;
 
-    read(INA3221_REG_MASK_ENABLE, (uint16_t*)&masken_reg);
-    masken_reg.warn_alert_latch_en = 0x00;
-    write(INA3221_REG_MASK_ENABLE, (uint16_t*)&masken_reg);
+    _read(INA3221_REG_MASK_ENABLE, (uint16_t*)&masken_reg);
+    masken_reg.warn_alert_latch_en = 1;
+    _write(INA3221_REG_MASK_ENABLE, (uint16_t*)&masken_reg);
     _masken_reg = masken_reg;
 }
 
-void Beastdevices_INA3221::setCritAlertLatchEn() {
+void Beastdevices_INA3221::setCritAlertLatchEnable() {
     masken_reg_t masken_reg;
 
-    read(INA3221_REG_MASK_ENABLE, (uint16_t*)&masken_reg);
-    masken_reg.crit_alert_latch_en = 0x01;
-    write(INA3221_REG_MASK_ENABLE, (uint16_t*)&masken_reg);
+    _read(INA3221_REG_MASK_ENABLE, (uint16_t*)&masken_reg);
+    masken_reg.crit_alert_latch_en = 1;
+    _write(INA3221_REG_MASK_ENABLE, (uint16_t*)&masken_reg);
     _masken_reg = masken_reg;
 }
 
-void Beastdevices_INA3221::setCritAlertLatchDis() {
+void Beastdevices_INA3221::setCritAlertLatchDisable() {
     masken_reg_t masken_reg;
 
-    read(INA3221_REG_MASK_ENABLE, (uint16_t*)&masken_reg);
-    masken_reg.crit_alert_latch_en = 0x00;
-    write(INA3221_REG_MASK_ENABLE, (uint16_t*)&masken_reg);
+    _read(INA3221_REG_MASK_ENABLE, (uint16_t*)&masken_reg);
+    masken_reg.crit_alert_latch_en = 1;
+    _write(INA3221_REG_MASK_ENABLE, (uint16_t*)&masken_reg);
     _masken_reg = masken_reg;
 }
 
 void Beastdevices_INA3221::readFlags() {
-    read(INA3221_REG_MASK_ENABLE, (uint16_t*)&_masken_reg);
+    _read(INA3221_REG_MASK_ENABLE, (uint16_t*)&_masken_reg);
 }
 
 bool Beastdevices_INA3221::getTimingCtrlAlertFlag(){
@@ -222,67 +242,67 @@ bool Beastdevices_INA3221::getCurrentSumAlertFlag(){
     return _masken_reg.shunt_sum_alert;
 }
 
-bool Beastdevices_INA3221::getConvReadyFlag(){
+bool Beastdevices_INA3221::getConversionReadyFlag(){
     return _masken_reg.conv_ready;
 }
 
 uint16_t Beastdevices_INA3221::getManufID() {
-    uint16_t id;
-    read(INA3221_REG_MANUF_ID, &id);
+    uint16_t id = 0;
+    _read(INA3221_REG_MANUF_ID, &id);
     return id;
 }
 
 uint16_t Beastdevices_INA3221::getDieID() {
-    uint16_t id;
-    read(INA3221_REG_DIE_ID, &id);
+    uint16_t id = 0;
+    _read(INA3221_REG_DIE_ID, &id);
     return id;
 }
 
-void Beastdevices_INA3221::Channel::setMeasEn() {
+void Beastdevices_INA3221::setChannelEnable(ina3221_ch_t channel) {
     conf_reg_t conf_reg;
 
-    ina3221.read(INA3221_REG_CONF, (uint16_t*)&conf_reg);
+    _read(INA3221_REG_CONF, (uint16_t*)&conf_reg);
 
-    switch(chNum){
+    switch(channel){
         case INA3221_CH1:
-            conf_reg.ch1_en = 0x01;
+            conf_reg.ch1_en = 1;
             break;
         case INA3221_CH2:
-            conf_reg.ch2_en = 0x01;
+            conf_reg.ch2_en = 1;
             break;
         case INA3221_CH3:
-            conf_reg.ch3_en = 0x01;
+            conf_reg.ch3_en = 1;
             break;
     }
 
-    ina3221.write(INA3221_REG_CONF, (uint16_t*)&conf_reg);
+    _write(INA3221_REG_CONF, (uint16_t*)&conf_reg);
 }
 
-void Beastdevices_INA3221::Channel::setMeasDis() {
+void Beastdevices_INA3221::setChannelDisable(ina3221_ch_t channel) {
     conf_reg_t conf_reg;
 
-    ina3221.read(INA3221_REG_CONF, (uint16_t*)&conf_reg);
+    _read(INA3221_REG_CONF, (uint16_t*)&conf_reg);
 
-    switch(chNum){
+    switch(channel){
         case INA3221_CH1:
-            conf_reg.ch1_en = 0x00;
+            conf_reg.ch1_en = 0;
             break;
         case INA3221_CH2:
-            conf_reg.ch2_en = 0x00;
+            conf_reg.ch2_en = 0;
             break;
         case INA3221_CH3:
-            conf_reg.ch3_en = 0x00;
+            conf_reg.ch3_en = 0;
             break;
     }
 
-    ina3221.write(INA3221_REG_CONF, (uint16_t*)&conf_reg);
+    _write(INA3221_REG_CONF, (uint16_t*)&conf_reg);
 }
 
-void Beastdevices_INA3221::Channel::setWarnAlertShuntLim(int32_t voltageuV) {
-    INA3221_REG reg;
-    int16_t val;
+void Beastdevices_INA3221::setWarnAlertShuntLimit(ina3221_ch_t channel, int32_t voltageuV) {
+    ina3221_reg_t reg;
+    int16_t val = 0;
 
-    switch(chNum){
+    switch(channel){
         case INA3221_CH1:
             reg = INA3221_REG_CH1_WARNING_ALERT_LIM;
             break;
@@ -295,14 +315,14 @@ void Beastdevices_INA3221::Channel::setWarnAlertShuntLim(int32_t voltageuV) {
     }
 
     val = voltageuV / 5;
-    ina3221.write(reg, (uint16_t*)&val);
+    _write(reg, (uint16_t*)&val);
 }
 
-void Beastdevices_INA3221::Channel::setCritAlertShuntLim(int32_t voltageuV) {
-    INA3221_REG reg;
-    int16_t val;
+void Beastdevices_INA3221::setCritAlertShuntLimit(ina3221_ch_t channel, int32_t voltageuV) {
+    ina3221_reg_t reg;
+    int16_t val = 0;
 
-    switch(chNum){
+    switch(channel){
         case INA3221_CH1:
             reg = INA3221_REG_CH1_CRIT_ALERT_LIM;
             break;
@@ -315,71 +335,71 @@ void Beastdevices_INA3221::Channel::setCritAlertShuntLim(int32_t voltageuV) {
     }
 
     val = voltageuV / 5;
-    ina3221.write(reg, (uint16_t*)&val);
+    _write(reg, (uint16_t*)&val);
 }
 
-void Beastdevices_INA3221::Channel::setWarnAlertCurrentLim(int32_t currentmA)
+void Beastdevices_INA3221::setWarnAlertCurrentLimit(ina3221_ch_t channel, int32_t currentmA)
 {
-    int32_t shuntuV;
-    shuntuV = currentmA*(int32_t)shuntRes;
-    setWarnAlertShuntLim(shuntuV);
+    int32_t shuntuV = 0;
+    shuntuV = currentmA*(int32_t)_shuntRes[channel];
+    setWarnAlertShuntLimit(channel, shuntuV);
 }
 
-void Beastdevices_INA3221::Channel::setCritAlertCurrentLim(int32_t currentmA)
+void Beastdevices_INA3221::setCritAlertCurrentLimit(ina3221_ch_t channel, int32_t currentmA)
 {
-    int32_t shuntuV;
-    shuntuV = currentmA*(int32_t)shuntRes;
-    setCritAlertShuntLim(shuntuV);
+    int32_t shuntuV = 0;
+    shuntuV = currentmA*(int32_t)_shuntRes[channel];
+    setCritAlertShuntLimit(channel, shuntuV);
 }
 
-void Beastdevices_INA3221::Channel::setCurrentSumEn() {
+void Beastdevices_INA3221::setCurrentSumEnable(ina3221_ch_t channel) {
     masken_reg_t masken_reg;
 
-    ina3221.read(INA3221_REG_MASK_ENABLE, (uint16_t*)&masken_reg);
+    _read(INA3221_REG_MASK_ENABLE, (uint16_t*)&masken_reg);
 
-    switch(chNum){
+    switch(channel){
         case INA3221_CH1:
-            masken_reg.shunt_sum_en_ch1 = 0x01;
+            masken_reg.shunt_sum_en_ch1 = 1;
             break;
         case INA3221_CH2:
-            masken_reg.shunt_sum_en_ch2 = 0x01;
+            masken_reg.shunt_sum_en_ch2 = 1;
             break;
         case INA3221_CH3:
-            masken_reg.shunt_sum_en_ch3 = 0x01;
+            masken_reg.shunt_sum_en_ch3 = 1;
             break;
     }
 
-    ina3221.write(INA3221_REG_MASK_ENABLE, (uint16_t*)&masken_reg);
-    ina3221._masken_reg = masken_reg;
+    _write(INA3221_REG_MASK_ENABLE, (uint16_t*)&masken_reg);
+    _masken_reg = masken_reg;
 }
 
-void Beastdevices_INA3221::Channel::setCurrentSumDis() {
+void Beastdevices_INA3221::setCurrentSumDisable(ina3221_ch_t channel) {
     masken_reg_t masken_reg;
 
-    ina3221.read(INA3221_REG_MASK_ENABLE, (uint16_t*)&masken_reg);
+    _read(INA3221_REG_MASK_ENABLE, (uint16_t*)&masken_reg);
 
-    switch(chNum){
+    switch(channel){
         case INA3221_CH1:
-            masken_reg.shunt_sum_en_ch1 = 0x00;
+            masken_reg.shunt_sum_en_ch1 = 0;
             break;
         case INA3221_CH2:
-            masken_reg.shunt_sum_en_ch2 = 0x00;
+            masken_reg.shunt_sum_en_ch2 = 0;
             break;
         case INA3221_CH3:
-            masken_reg.shunt_sum_en_ch3 = 0x00;
+            masken_reg.shunt_sum_en_ch3 = 0;
             break;
     }
 
-    ina3221.write(INA3221_REG_MASK_ENABLE, (uint16_t*)&masken_reg);
-    ina3221._masken_reg = masken_reg;
+    _write(INA3221_REG_MASK_ENABLE, (uint16_t*)&masken_reg);
+    _masken_reg = masken_reg;
 }
 
-int32_t Beastdevices_INA3221::Channel::readShuntVoltage() {
+int32_t Beastdevices_INA3221::readShuntVoltage(ina3221_ch_t channel) {
     int32_t res;
-    INA3221_REG reg;
-    uint16_t val_raw;
+    ina3221_reg_t reg;
+    uint16_t val_raw = 0;
 
-    switch(chNum){
+    switch(channel){
         case INA3221_CH1:
             reg = INA3221_REG_CH1_SHUNTV;
             break;
@@ -391,7 +411,7 @@ int32_t Beastdevices_INA3221::Channel::readShuntVoltage() {
             break;
     }
 
-    ina3221.read(reg, &val_raw);
+    _read(reg, &val_raw);
 
     // 1 LSB = 5uV
     res = (int16_t)val_raw * 5;
@@ -399,43 +419,81 @@ int32_t Beastdevices_INA3221::Channel::readShuntVoltage() {
     return res;
 }
 
-bool Beastdevices_INA3221::Channel::getWarnAlertFlag() {
-    switch(chNum){
+bool Beastdevices_INA3221::getWarnAlertFlag(ina3221_ch_t channel) {
+    switch(channel){
     case INA3221_CH1:
-        return ina3221._masken_reg.warn_alert_ch1;
+        return _masken_reg.warn_alert_ch1;
     case INA3221_CH2:
-        return ina3221._masken_reg.warn_alert_ch2;
+        return _masken_reg.warn_alert_ch2;
     case INA3221_CH3:
-        return ina3221._masken_reg.warn_alert_ch3;
+        return _masken_reg.warn_alert_ch3;
     }
 }
 
-bool Beastdevices_INA3221::Channel::getCritAlertFlag() {
-    switch(chNum){
+bool Beastdevices_INA3221::getCritAlertFlag(ina3221_ch_t channel) {
+    switch(channel){
     case INA3221_CH1:
-        return ina3221._masken_reg.crit_alert_ch1;
+        return _masken_reg.crit_alert_ch1;
     case INA3221_CH2:
-        return ina3221._masken_reg.crit_alert_ch2;
+        return _masken_reg.crit_alert_ch2;
     case INA3221_CH3:
-        return ina3221._masken_reg.crit_alert_ch3;
+        return _masken_reg.crit_alert_ch3;
     }
 }
 
-int32_t Beastdevices_INA3221::Channel::getCurrent() {
-    int32_t shunt_uV;
-    int32_t current_mA;
+uint32_t Beastdevices_INA3221::estimateOffsetVoltage(ina3221_ch_t channel, uint32_t busV) {
+    float bias_in = 10.0;        // Input bias current at IN– in uA
+    float r_in = 0.670;         // Input resistance at IN– in MOhm
+    uint32_t adc_step = 40;      // smallest shunt ADC step in uV
+    float shunt_res = _shuntRes[channel]/1000.0; // convert to Ohm
+    float filter_res = _filterRes[channel];
+    uint32_t offset = 0.0;
+    float reminder;
 
-    shunt_uV = readShuntVoltage();
-    current_mA = shunt_uV/(int32_t)shuntRes;
-    return current_mA;
+    offset = (shunt_res + filter_res)*(busV/r_in + bias_in) - bias_in * filter_res;
+
+    // Round the offset to the closest shunt ADC value
+    reminder = offset % adc_step;
+    if (reminder < adc_step/2)
+    {
+        offset -= reminder;
+    } else {
+        offset += adc_step - reminder;
+    }
+
+    return offset;
 }
 
-int32_t Beastdevices_INA3221::Channel::getVoltage() {
-    int32_t res;
-    INA3221_REG reg;
-    uint16_t val_raw;
+float Beastdevices_INA3221::getCurrent(ina3221_ch_t channel) {
+    uint32_t shunt_uV = 0;
+    float current_A = 0;
 
-    switch(chNum){
+    shunt_uV = readShuntVoltage(channel);
+    current_A = shunt_uV / _shuntRes[channel] / 1000.0;
+    return current_A;
+}
+
+float Beastdevices_INA3221::getCurrentCompensated(ina3221_ch_t channel) {
+    int32_t shunt_uV = 0;
+    int32_t bus_V = 0;
+    float current_A = 0.0;
+    uint32_t offset_uV = 0;
+
+    shunt_uV = readShuntVoltage(channel);
+    bus_V = getVoltage(channel);
+    offset_uV = estimateOffsetVoltage(channel, bus_V);
+
+    current_A = (shunt_uV - offset_uV) / _shuntRes[channel] / 1000.0;
+
+    return current_A;
+}
+
+float Beastdevices_INA3221::getVoltage(ina3221_ch_t channel) {
+    float voltage_V = 0.0;
+    ina3221_reg_t reg;
+    uint16_t val_raw = 0;
+
+    switch(channel){
         case INA3221_CH1:
             reg = INA3221_REG_CH1_BUSV;
             break;
@@ -447,21 +505,9 @@ int32_t Beastdevices_INA3221::Channel::getVoltage() {
             break;
     }
 
-    ina3221.read(reg, &val_raw);
+    _read(reg, &val_raw);
 
-    res = (int16_t)val_raw;
+    voltage_V = val_raw / 1000.0;
 
-    return res;
-}
-
-int32_t Beastdevices_INA3221::Channel::getPower() {
-    int32_t bus_mV;
-    int32_t current_mA;
-    int32_t power_mW;
-
-    bus_mV = getVoltage();
-    current_mA = getCurrent();
-    power_mW = bus_mV*current_mA/1000;
-
-    return power_mW;
+    return voltage_V;
 }

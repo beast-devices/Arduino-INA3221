@@ -1,11 +1,11 @@
 #include <Wire.h>
 #include <Beastdevices_INA3221.h>
 
-#define SERIAL_SPEED 115200
+#define SERIAL_SPEED      115200
+#define PRINT_DEC_POINTS  3
 
-// Set I2C address to 0x41 (0b1000001)
-// and set the shunt resistance to 10 mOhm.
-Beastdevices_INA3221 ina3221(0x41, 10);
+// Set I2C address to 0x41 (A0 pin -> VCC)
+Beastdevices_INA3221 ina3221(INA3221_ADDR41_VCC);
 
 void setup() {
   Serial.begin(SERIAL_SPEED);
@@ -16,56 +16,53 @@ void setup() {
 
   ina3221.begin();
   ina3221.reset();
+
+  ina3221.setShuntRes(10, 10, 10);
+  ina3221.setFilterRes(10, 10, 10);
+  ina3221.setShuntConversionTime(INA3221_REG_CONF_CT_8244US);
 }
 
 void loop() {
-  int32_t ch1_current;
-  int32_t ch1_voltage;
-  int32_t ch1_power;
+  float current[3];
+  float current_comp[3];
+  float voltage[3];
 
-  int32_t ch2_current;
-  int32_t ch2_voltage;
-  int32_t ch2_power;
+  current[0] = ina3221.getCurrent(INA3221_CH1);
+  current_comp[0] = ina3221.getCurrentCompensated(INA3221_CH1);
+  voltage[0] = ina3221.getVoltage(INA3221_CH1);
 
-  int32_t ch3_current;
-  int32_t ch3_voltage;
-  int32_t ch3_power;
+  current[1] = ina3221.getCurrent(INA3221_CH2);
+  current_comp[1] = ina3221.getCurrentCompensated(INA3221_CH2);
+  voltage[1] = ina3221.getVoltage(INA3221_CH2);
 
-  ch1_current = ina3221.Ch1().getCurrent();
-  ch1_voltage = ina3221.Ch1().getVoltage();
-  ch1_power = ina3221.Ch1().getPower();
-
-  ch2_current = ina3221.Ch2().getCurrent();
-  ch2_voltage = ina3221.Ch2().getVoltage();
-  ch2_power = ina3221.Ch2().getPower();
-
-  ch3_current = ina3221.Ch3().getCurrent();
-  ch3_voltage = ina3221.Ch3().getVoltage();
-  ch3_power = ina3221.Ch3().getPower();
+  current[2] = ina3221.getCurrent(INA3221_CH3);
+  current_comp[2] = ina3221.getCurrentCompensated(INA3221_CH3);
+  voltage[2] = ina3221.getVoltage(INA3221_CH3);
 
   Serial.print("Channel 1: ");
-  Serial.print(ch1_current);
-  Serial.print("mA, ");
-  Serial.print(ch1_voltage);
-  Serial.print("mV, ");
-  Serial.print(ch1_power);
-  Serial.println("mW");
+  Serial.print(current[0], PRINT_DEC_POINTS);
+  Serial.print("A, ");
+  Serial.print(current_comp[0], PRINT_DEC_POINTS);
+  Serial.print("A, ");
+  Serial.print(voltage[0], PRINT_DEC_POINTS);
+  Serial.println("V");
 
   Serial.print("Channel 2: ");
-  Serial.print(ch2_current);
-  Serial.print("mA, ");
-  Serial.print(ch2_voltage);
-  Serial.print("mV, ");
-  Serial.print(ch2_power);
-  Serial.println("mW");
+  Serial.print(current[1], PRINT_DEC_POINTS);
+  Serial.print("A, ");
+  Serial.print(current_comp[1], PRINT_DEC_POINTS);
+  Serial.print("A, ");
+  Serial.print(voltage[1], PRINT_DEC_POINTS);
+  Serial.println("V");
 
   Serial.print("Channel 3: ");
-  Serial.print(ch3_current);
-  Serial.print("mA, ");
-  Serial.print(ch3_voltage);
-  Serial.print("mV, ");
-  Serial.print(ch3_power);
-  Serial.println("mW");
+  Serial.print(current[2], PRINT_DEC_POINTS);
+  Serial.print("A, ");
+  Serial.print(current_comp[2], PRINT_DEC_POINTS);
+  Serial.print("A, ");
+  Serial.print(voltage[2], PRINT_DEC_POINTS);
+  Serial.println("V");
+
 
   delay(1000);
 }

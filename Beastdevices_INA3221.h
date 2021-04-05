@@ -158,10 +158,10 @@ public:
     // Initializes INA3221
     void begin(TwoWire *theWire = &Wire);
 
-    // Sets shunt resistor vaue in mOhm
+    // Sets shunt resistor value in mOhm
     void setShuntRes(uint32_t res_ch1, uint32_t res_ch2, uint32_t res_ch3);
 
-    // Sets filter resistors vaue in Ohm
+    // Sets filter resistors value in Ohm
     void setFilterRes(uint32_t res_ch1, uint32_t res_ch2, uint32_t res_ch3);
 
     // Sets I2C address of INA3221
@@ -296,7 +296,7 @@ public:
     bool getCritAlertFlag(ina3221_ch_t channel);
 
     // Estimates offset voltage added by the series filter resitors
-    uint32_t estimateOffsetVoltage(ina3221_ch_t channel, uint32_t busVoltage);
+    int32_t estimateOffsetVoltage(ina3221_ch_t channel, uint32_t busVoltage);
 
     // Gets current in mA.
     float getCurrent(ina3221_ch_t channel);

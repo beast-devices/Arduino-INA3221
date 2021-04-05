@@ -441,13 +441,13 @@ bool Beastdevices_INA3221::getCritAlertFlag(ina3221_ch_t channel) {
     }
 }
 
-uint32_t Beastdevices_INA3221::estimateOffsetVoltage(ina3221_ch_t channel, uint32_t busV) {
+int32_t Beastdevices_INA3221::estimateOffsetVoltage(ina3221_ch_t channel, uint32_t busV) {
     float bias_in = 10.0;        // Input bias current at IN– in uA
     float r_in = 0.670;         // Input resistance at IN– in MOhm
     uint32_t adc_step = 40;      // smallest shunt ADC step in uV
     float shunt_res = _shuntRes[channel]/1000.0; // convert to Ohm
     float filter_res = _filterRes[channel];
-    uint32_t offset = 0.0;
+    int32_t offset = 0.0;
     float reminder;
 
     offset = (shunt_res + filter_res)*(busV/r_in + bias_in) - bias_in * filter_res;
@@ -465,11 +465,11 @@ uint32_t Beastdevices_INA3221::estimateOffsetVoltage(ina3221_ch_t channel, uint3
 }
 
 float Beastdevices_INA3221::getCurrent(ina3221_ch_t channel) {
-    uint32_t shunt_uV = 0;
+    int32_t shunt_uV = 0;
     float current_A = 0;
 
     shunt_uV = readShuntVoltage(channel);
-    current_A = shunt_uV / _shuntRes[channel] / 1000.0;
+    current_A = shunt_uV / (int32_t)_shuntRes[channel] / 1000.0;
     return current_A;
 }
 
@@ -477,13 +477,13 @@ float Beastdevices_INA3221::getCurrentCompensated(ina3221_ch_t channel) {
     int32_t shunt_uV = 0;
     int32_t bus_V = 0;
     float current_A = 0.0;
-    uint32_t offset_uV = 0;
+    int32_t offset_uV = 0;
 
     shunt_uV = readShuntVoltage(channel);
     bus_V = getVoltage(channel);
     offset_uV = estimateOffsetVoltage(channel, bus_V);
 
-    current_A = (shunt_uV - offset_uV) / _shuntRes[channel] / 1000.0;
+    current_A = (shunt_uV - offset_uV) / (int32_t)_shuntRes[channel] / 1000.0;
 
     return current_A;
 }

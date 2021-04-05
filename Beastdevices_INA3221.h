@@ -286,8 +286,8 @@ public:
     // Excludes channel from filling Shunt-Voltage Sum register.
     void setCurrentSumDisable(ina3221_ch_t channel);
 
-    // Reads shunt voltage in uV.
-    int32_t readShuntVoltage(ina3221_ch_t channel);
+    // Gets shunt voltage in uV.
+    int32_t getShuntVoltage(ina3221_ch_t channel);
 
     // Gets warning alert flag.
     bool getWarnAlertFlag(ina3221_ch_t channel);
@@ -298,13 +298,13 @@ public:
     // Estimates offset voltage added by the series filter resitors
     int32_t estimateOffsetVoltage(ina3221_ch_t channel, uint32_t busVoltage);
 
-    // Gets current in mA.
+    // Gets current in A.
     float getCurrent(ina3221_ch_t channel);
 
     // Gets current compensated with calculated offset voltage.
     float getCurrentCompensated(ina3221_ch_t channel);
 
-    // Gets bus voltage in mV.
+    // Gets bus voltage in V.
     float getVoltage(ina3221_ch_t channel);
 };
 

@@ -394,7 +394,7 @@ void Beastdevices_INA3221::setCurrentSumDisable(ina3221_ch_t channel) {
     _masken_reg = masken_reg;
 }
 
-int32_t Beastdevices_INA3221::readShuntVoltage(ina3221_ch_t channel) {
+int32_t Beastdevices_INA3221::getShuntVoltage(ina3221_ch_t channel) {
     int32_t res;
     ina3221_reg_t reg;
     uint16_t val_raw = 0;
@@ -468,7 +468,7 @@ float Beastdevices_INA3221::getCurrent(ina3221_ch_t channel) {
     int32_t shunt_uV = 0;
     float current_A = 0;
 
-    shunt_uV = readShuntVoltage(channel);
+    shunt_uV = getShuntVoltage(channel);
     current_A = shunt_uV / (int32_t)_shuntRes[channel] / 1000.0;
     return current_A;
 }
@@ -479,7 +479,7 @@ float Beastdevices_INA3221::getCurrentCompensated(ina3221_ch_t channel) {
     float current_A = 0.0;
     int32_t offset_uV = 0;
 
-    shunt_uV = readShuntVoltage(channel);
+    shunt_uV = getShuntVoltage(channel);
     bus_V = getVoltage(channel);
     offset_uV = estimateOffsetVoltage(channel, bus_V);
 

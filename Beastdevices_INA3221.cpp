@@ -413,8 +413,8 @@ int32_t Beastdevices_INA3221::getShuntVoltage(ina3221_ch_t channel) {
 
     _read(reg, &val_raw);
 
-    // 1 LSB = 5uV
-    res = (int16_t)val_raw * 5;
+    res = (int16_t)val_raw;
+    res *= 5; // 1 LSB = 5uV
 
     return res;
 }

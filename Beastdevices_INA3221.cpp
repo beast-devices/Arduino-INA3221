@@ -427,6 +427,8 @@ bool Beastdevices_INA3221::getWarnAlertFlag(ina3221_ch_t channel) {
         return _masken_reg.warn_alert_ch2;
     case INA3221_CH3:
         return _masken_reg.warn_alert_ch3;
+    default:
+        return -1;
     }
 }
 
@@ -438,6 +440,8 @@ bool Beastdevices_INA3221::getCritAlertFlag(ina3221_ch_t channel) {
         return _masken_reg.crit_alert_ch2;
     case INA3221_CH3:
         return _masken_reg.crit_alert_ch3;
+    default:
+        return -1;	    
     }
 }
 
